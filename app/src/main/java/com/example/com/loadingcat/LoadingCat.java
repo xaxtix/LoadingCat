@@ -56,7 +56,7 @@ public class LoadingCat extends View {
         strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         strokePaint.setColor(ContextCompat.getColor(context, R.color.strokeColor));
         strokePaint.setStyle(Paint.Style.STROKE);
-        strokePaint.setStrokeWidth(16);
+        strokePaint.setStrokeWidth(4);
         strokePaint.setStrokeCap(Paint.Cap.ROUND);
         strokePaint.setStrokeJoin(Paint.Join.ROUND);
 
@@ -113,21 +113,33 @@ public class LoadingCat extends View {
         int pY = drawingRect.centerY();
         int sizeHalf = drawingRect.height() >> 1;
         int internalSizeHalf = ((int) internalRectF.height()) >> 1;
+        int leftSizeHalf = ((int) internalLeftRectF.height()) >> 1;
+        int rightSizeHalf = ((int) internalRightRectF.height()) >> 1;
+
+
         int earSize = ((int) (drawingRectF.bottom - internalRectF.bottom)) / 4;
+        float interanlAr = (float) Math.asin(Math.sin(Math.toRadians(7) * sizeHalf / internalSizeHalf));
+        float interanlA = (float) Math.toDegrees(interanlAr);
+
+        float leftAr = (float) Math.asin(Math.sin(Math.toRadians(7) * sizeHalf / leftSizeHalf));
+        float leftA = (float) Math.toDegrees(leftAr);
+
+        float rightAr = (float) Math.asin(Math.sin(Math.toRadians(7) * sizeHalf / rightSizeHalf));
+        float rightA = (float) Math.toDegrees(rightAr);
 
 
-        if (inc) {
-            alph += 3;
-            if (alph > 300)
-                inc = false;
-        } else {
-            alph -= 3;
-            if (alph < 60)
-                inc = true;
-        }
-
-
-        canvas.rotate(i-=5,pX,pY);
+//        if (inc) {
+//            alph += 3;
+//            if (alph > 300)
+//                inc = false;
+//        } else {
+//            alph -= 3;
+//            if (alph < 60)
+//                inc = true;
+//        }
+//
+//        canvas.rotate(i-=5,pX,pY);
+        canvas.save();
 
         rotateMatrix.setTranslate(0, 40);
         Point point = new Point(pX + sizeHalf - earSize, pY);
@@ -140,34 +152,28 @@ public class LoadingCat extends View {
         point.set(pX + internalSizeHalf + earSize, pY);
         transformPoint(point, rotateMatrix);
         path.lineTo(point.x, point.y);
-        path.arcTo(internalRectF, 0, alph);
-
-        //legs
-        rotateMatrix.reset();
-        rotateMatrix.setRotate(alph, pX, pY);
-        point.set(pX + internalSizeHalf + earSize, pY);
-        transformPoint(point, rotateMatrix);
-        path.lineTo(point.x, point.y);
-
-
-        path.arcTo(internalLeftRectF, alph, -15);
-        point.set(pX + sizeHalf - earSize, pY);
-        rotateMatrix.setTranslate(
-                0,
-                -(float) (internalLeftRectF.height() * Math.sin(Math.toRadians(15 * 0.5d)))
-        );
-        transformPoint(point, rotateMatrix);
-        rotateMatrix.setRotate(alph, pX, pY);
-        transformPoint(point, rotateMatrix);
-        path.lineTo(point.x, point.y);
-
-        path.arcTo(internalRightRectF, alph - 15, 15);
-
-        path.close();
+        path.arcTo(internalRectF, 0, (float) (alph - 7 + interanlA));
 
         canvas.drawPath(path, strokePaint);
 
-        invalidate();
+        //legs
+        canvas.restore();
+        canvas.save();
+        canvas.rotate(alph - 7, pX, pY);
+        canvas.drawLine(pX, pY, pX + sizeHalf, pY, strokePaint);
+        canvas.translate(0, (float) (sizeHalf * Math.sin(Math.toRadians(7))));
+        float offset = (float) (sizeHalf - sizeHalf * Math.cos(Math.toRadians(7)));
+        float offset1 = (float) (internalSizeHalf - internalSizeHalf * Math.cos(interanlAr));
+        canvas.drawLine(pX + internalSizeHalf - offset1,
+                pY, pX + sizeHalf - offset, pY, strokePaint);
+
+        canvas.restore();
+        canvas.drawArc(internalLeftRectF, alph - 7 + leftA, -2 * leftA,false,strokePaint);
+
+        canvas.drawArc(internalRightRectF, alph - 7 + rightA, -2 * rightA,false,strokePaint);
+
+
+        //  invalidate();
         //canvas.drawCircle(pX, pY, sizeHalf, strokePaint);
     }
 
