@@ -17,6 +17,7 @@ import android.view.View;
 
 public class LoadingCat extends View {
 
+    private final static int HEAD_LENGTH = 60;
     Rect drawingRect;
     RectF drawingRectF;
     RectF internalRectF;
@@ -24,6 +25,10 @@ public class LoadingCat extends View {
     RectF internalRightRectF;
 
     Paint strokePaint;
+    Paint fillPaint;
+
+    Paint pawFill;
+    Paint pawStroke;
 
     Matrix rotateMatrix;
 
@@ -60,7 +65,18 @@ public class LoadingCat extends View {
         strokePaint.setStrokeCap(Paint.Cap.ROUND);
         strokePaint.setStrokeJoin(Paint.Join.ROUND);
 
+        fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fillPaint.setColor(Color.YELLOW);
+
+        pawStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pawStroke.setColor(ContextCompat.getColor(context, R.color.strokeColor));
+        pawStroke.setStyle(Paint.Style.STROKE);
+        pawStroke.setStrokeWidth(64);
+        pawStroke.setStrokeCap(Paint.Cap.ROUND);
+        pawStroke.setStrokeJoin(Paint.Join.ROUND);
+
         rotateMatrix = new Matrix();
+        setLayerType(LAYER_TYPE_HARDWARE,null);
     }
 
     @Override
@@ -71,6 +87,7 @@ public class LoadingCat extends View {
         int cX = getMeasuredWidth() >> 1;
         int cY = getMeasuredHeight() >> 1;
         int padding = (int) (strokePaint.getStrokeWidth() * 0.5f);
+        float strokeHalf = pawStroke.getStrokeWidth() / 2 - strokePaint.getStrokeWidth() / 2;
 
         drawingRect.set(
                 cX - sizeHalf + padding,
@@ -90,17 +107,17 @@ public class LoadingCat extends View {
         int earSize = ((int) (drawingRectF.bottom - internalRectF.bottom)) / 4;
 
         internalLeftRectF.set(
-                internalRectF.left - earSize,
-                internalRectF.top - earSize,
-                internalRectF.right + earSize,
-                internalRectF.bottom + earSize
+                internalRectF.left - strokeHalf,
+                internalRectF.top - strokeHalf,
+                internalRectF.right + strokeHalf,
+                internalRectF.bottom + strokeHalf
         );
 
         internalRightRectF.set(
-                drawingRectF.left + earSize,
-                drawingRectF.top + earSize,
-                drawingRectF.right - earSize,
-                drawingRectF.bottom - earSize
+                drawingRectF.left + strokeHalf,
+                drawingRectF.top + strokeHalf,
+                drawingRectF.right - strokeHalf,
+                drawingRectF.bottom - strokeHalf
         );
     }
 
@@ -128,17 +145,17 @@ public class LoadingCat extends View {
         float rightA = (float) Math.toDegrees(rightAr);
 
 
-//        if (inc) {
-//            alph += 3;
-//            if (alph > 300)
-//                inc = false;
-//        } else {
-//            alph -= 3;
-//            if (alph < 60)
-//                inc = true;
-//        }
-//
-//        canvas.rotate(i-=5,pX,pY);
+        if (inc) {
+            alph += 3;
+            if (alph > 300)
+                inc = false;
+        } else {
+            alph -= 3;
+            if (alph < 60)
+                inc = true;
+        }
+
+        canvas.rotate(i-=5,pX,pY);
         canvas.save();
 
         rotateMatrix.setTranslate(0, 40);
@@ -146,34 +163,43 @@ public class LoadingCat extends View {
 
         //head
         Path path = new Path();
-        path.arcTo(drawingRectF, alph, -alph);
+        path.arcTo(drawingRectF, HEAD_LENGTH, -HEAD_LENGTH);
         transformPoint(point, rotateMatrix);
         path.lineTo(point.x, point.y);
         point.set(pX + internalSizeHalf + earSize, pY);
         transformPoint(point, rotateMatrix);
         path.lineTo(point.x, point.y);
-        path.arcTo(internalRectF, 0, (float) (alph - 7 + interanlA));
+        path.arcTo(internalRectF, 0, HEAD_LENGTH - 7 + interanlA);
+        canvas.drawPath(path,strokePaint);
+        path.close();
+        canvas.drawPath(path,fillPaint);
 
-        canvas.drawPath(path, strokePaint);
+        canvas.drawArc(internalLeftRectF,HEAD_LENGTH,alph,false,pawStroke);
+        canvas.drawArc(internalRightRectF,HEAD_LENGTH,alph,false,pawStroke);
 
-        //legs
-        canvas.restore();
-        canvas.save();
-        canvas.rotate(alph - 7, pX, pY);
-        canvas.drawLine(pX, pY, pX + sizeHalf, pY, strokePaint);
-        canvas.translate(0, (float) (sizeHalf * Math.sin(Math.toRadians(7))));
+        //
+
+
         float offset = (float) (sizeHalf - sizeHalf * Math.cos(Math.toRadians(7)));
         float offset1 = (float) (internalSizeHalf - internalSizeHalf * Math.cos(interanlAr));
-        canvas.drawLine(pX + internalSizeHalf - offset1,
-                pY, pX + sizeHalf - offset, pY, strokePaint);
 
-        canvas.restore();
-        canvas.drawArc(internalLeftRectF, alph - 7 + leftA, -2 * leftA,false,strokePaint);
+        point.set((int) (pX + leftSizeHalf - offset), pY);
+        rotateMatrix.setRotate(alph - 7 + leftA, pX, pY);
+        transformPoint(point, rotateMatrix);
+        path.cubicTo(point.x, point.y,point.x - 50, point.y,point.x, point.y);
+        path.arcTo(internalLeftRectF, alph - 7 + leftA, -2 * leftA);
 
-        canvas.drawArc(internalRightRectF, alph - 7 + rightA, -2 * rightA,false,strokePaint);
+        point.set((int) (pX + rightSizeHalf - offset1), pY);
 
+        rotateMatrix.setRotate(alph - 7 -rightA, pX, pY);
+        transformPoint(point, rotateMatrix);
+        path.lineTo(point.x, point.y);
+        path.arcTo(internalRightRectF,alph - 7 - rightA, 2 * rightA);
+        path.close();
 
-        //  invalidate();
+      //  canvas.drawPath(path, strokePaint);
+
+      //    invalidate();
         //canvas.drawCircle(pX, pY, sizeHalf, strokePaint);
     }
 
