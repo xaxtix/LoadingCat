@@ -2,13 +2,10 @@ package com.example.com.loadingcat;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.CornerPathEffect;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.support.v4.content.ContextCompat;
@@ -18,22 +15,36 @@ import android.view.View;
 public class LoadingCat extends View {
 
     private final static int HEAD_LENGTH = 60;
+    private final static int STROKE_WIDTH = 24;
+    private final static int PAW_WIDTH = 64;
+    private final static int PAW_LIGHT_WIDTH = 92;
+
     Rect drawingRect;
     RectF drawingRectF;
     RectF internalRectF;
     RectF internalLeftRectF;
     RectF internalRightRectF;
+    RectF internalMiddleRecrF;
 
     Paint strokePaint;
     Paint fillPaint;
 
+    Paint bodyPatint;
+
     Paint pawFill;
     Paint pawStroke;
+    Paint pawLightStroke;
+    Paint tailStroke;
 
     Matrix rotateMatrix;
 
     float alph = 100;
     boolean inc;
+
+    int bodyColor;
+    int strokeColor;
+    int bodyLightColor;
+    int bodyDarkColor;
 
     public LoadingCat(Context context) {
         super(context);
@@ -57,26 +68,60 @@ public class LoadingCat extends View {
         internalRectF = new RectF();
         internalLeftRectF = new RectF();
         internalRightRectF = new RectF();
+        internalMiddleRecrF = new RectF();
+
+        bodyColor = ContextCompat.getColor(context, R.color.bodyColor);
+        bodyLightColor = ContextCompat.getColor(context, R.color.bodyLightColor);
+        strokeColor = ContextCompat.getColor(context, R.color.strokeColor);
+        bodyDarkColor = ContextCompat.getColor(context, R.color.bodyDarkColor);
 
         strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        strokePaint.setColor(ContextCompat.getColor(context, R.color.strokeColor));
+        strokePaint.setColor(strokeColor);
         strokePaint.setStyle(Paint.Style.STROKE);
-        strokePaint.setStrokeWidth(4);
+        strokePaint.setStrokeWidth(STROKE_WIDTH);
         strokePaint.setStrokeCap(Paint.Cap.ROUND);
         strokePaint.setStrokeJoin(Paint.Join.ROUND);
 
         fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        fillPaint.setColor(Color.YELLOW);
+        fillPaint.setColor(bodyColor);
 
         pawStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pawStroke.setColor(ContextCompat.getColor(context, R.color.strokeColor));
+        pawStroke.setColor(strokeColor);
         pawStroke.setStyle(Paint.Style.STROKE);
-        pawStroke.setStrokeWidth(64);
+        pawStroke.setStrokeWidth(PAW_WIDTH);
         pawStroke.setStrokeCap(Paint.Cap.ROUND);
         pawStroke.setStrokeJoin(Paint.Join.ROUND);
 
+        pawFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pawFill.setColor(bodyColor);
+        pawFill.setStyle(Paint.Style.STROKE);
+        pawFill.setStrokeWidth(PAW_WIDTH - STROKE_WIDTH);
+        pawFill.setStrokeCap(Paint.Cap.ROUND);
+        pawFill.setStrokeJoin(Paint.Join.ROUND);
+
+        pawLightStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pawLightStroke.setColor(bodyLightColor);
+        pawLightStroke.setStyle(Paint.Style.STROKE);
+        pawLightStroke.setStrokeWidth(PAW_LIGHT_WIDTH);
+        pawLightStroke.setStrokeCap(Paint.Cap.ROUND);
+        pawLightStroke.setStrokeJoin(Paint.Join.ROUND);
+
+        bodyPatint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bodyPatint.setColor(bodyColor);
+        bodyPatint.setStyle(Paint.Style.STROKE);
+        bodyPatint.setStrokeWidth(PAW_LIGHT_WIDTH + 30);
+        bodyPatint.setStrokeCap(Paint.Cap.BUTT);
+
+        tailStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        tailStroke.setColor(bodyDarkColor);
+        tailStroke.setStyle(Paint.Style.STROKE);
+        tailStroke.setStrokeWidth(PAW_WIDTH - STROKE_WIDTH);
+        tailStroke.setStrokeCap(Paint.Cap.ROUND);
+        tailStroke.setStrokeJoin(Paint.Join.ROUND);
+
+
         rotateMatrix = new Matrix();
-        setLayerType(LAYER_TYPE_HARDWARE,null);
+        setLayerType(LAYER_TYPE_HARDWARE, null);
     }
 
     @Override
@@ -84,6 +129,7 @@ public class LoadingCat extends View {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int sizeHalf = Math.min(getMeasuredHeight(), getMeasuredWidth()) >> 1;
         int sizeQuad = (int) (sizeHalf * 0.4f);
+        int sizeQuadHalf = sizeQuad >> 1;
         int cX = getMeasuredWidth() >> 1;
         int cY = getMeasuredHeight() >> 1;
         int padding = (int) (strokePaint.getStrokeWidth() * 0.5f);
@@ -119,6 +165,13 @@ public class LoadingCat extends View {
                 drawingRectF.right - strokeHalf,
                 drawingRectF.bottom - strokeHalf
         );
+
+        internalMiddleRecrF.set(
+                drawingRect.left + sizeQuadHalf,
+                drawingRect.top + sizeQuadHalf,
+                drawingRect.right - sizeQuadHalf,
+                drawingRect.bottom - sizeQuadHalf
+        );
     }
 
     int i = 0;
@@ -146,16 +199,16 @@ public class LoadingCat extends View {
 
 
         if (inc) {
-            alph += 3;
-            if (alph > 300)
+            alph += 1;
+            if (alph > 200)
                 inc = false;
         } else {
-            alph -= 3;
+            alph -= 1;
             if (alph < 60)
                 inc = true;
         }
 
-        canvas.rotate(i-=5,pX,pY);
+        canvas.rotate(i -= 4, pX, pY);
         canvas.save();
 
         rotateMatrix.setTranslate(0, 40);
@@ -170,36 +223,43 @@ public class LoadingCat extends View {
         transformPoint(point, rotateMatrix);
         path.lineTo(point.x, point.y);
         path.arcTo(internalRectF, 0, HEAD_LENGTH - 7 + interanlA);
-        canvas.drawPath(path,strokePaint);
+        canvas.drawPath(path, strokePaint);
         path.close();
-        canvas.drawPath(path,fillPaint);
+        canvas.drawPath(path, fillPaint);
 
-        canvas.drawArc(internalLeftRectF,HEAD_LENGTH,alph,false,pawStroke);
-        canvas.drawArc(internalRightRectF,HEAD_LENGTH,alph,false,pawStroke);
+        //tail
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH + alph - 30, 40, false, pawStroke);
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH + alph - 30, 40, false, tailStroke);
+        //back paws
+        canvas.drawArc(internalLeftRectF, HEAD_LENGTH, alph, false, pawStroke);
+        canvas.drawArc(internalRightRectF, HEAD_LENGTH, alph, false, pawStroke);
 
-        //
+        canvas.drawArc(internalLeftRectF, HEAD_LENGTH - 10, alph + 10, false, pawFill);
+        canvas.drawArc(internalRightRectF, HEAD_LENGTH - 10, alph + 10, false, pawFill);
+
+        //body
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH - 20, alph + 10, false, bodyPatint);
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH - 20, alph - 15, false, pawLightStroke);
+
+        //face paws
+        canvas.drawArc(internalLeftRectF, HEAD_LENGTH - 17, 15, false, pawStroke);
+        canvas.drawArc(internalRightRectF, HEAD_LENGTH - 17, 15, false, pawStroke);
+
+        canvas.drawArc(internalLeftRectF, HEAD_LENGTH - 17 - 10, 15 + 10, false, pawFill);
+        canvas.drawArc(internalRightRectF, HEAD_LENGTH - 17 - 10, 15 + 10, false, pawFill);
+
+        canvas.restore();
+
+        //TODO hardcode
+        canvas.translate(0, 60);
+        canvas.rotate(3,pX,pY);
+        canvas.drawPoint(pX + sizeHalf - earSize - strokePaint.getStrokeWidth() / 4, pY, strokePaint);
+        canvas.drawPoint(pX + internalSizeHalf + earSize + strokePaint.getStrokeWidth() / 4, pY, strokePaint);
 
 
-        float offset = (float) (sizeHalf - sizeHalf * Math.cos(Math.toRadians(7)));
-        float offset1 = (float) (internalSizeHalf - internalSizeHalf * Math.cos(interanlAr));
+        //  canvas.drawPath(path, strokePaint);
 
-        point.set((int) (pX + leftSizeHalf - offset), pY);
-        rotateMatrix.setRotate(alph - 7 + leftA, pX, pY);
-        transformPoint(point, rotateMatrix);
-        path.cubicTo(point.x, point.y,point.x - 50, point.y,point.x, point.y);
-        path.arcTo(internalLeftRectF, alph - 7 + leftA, -2 * leftA);
-
-        point.set((int) (pX + rightSizeHalf - offset1), pY);
-
-        rotateMatrix.setRotate(alph - 7 -rightA, pX, pY);
-        transformPoint(point, rotateMatrix);
-        path.lineTo(point.x, point.y);
-        path.arcTo(internalRightRectF,alph - 7 - rightA, 2 * rightA);
-        path.close();
-
-      //  canvas.drawPath(path, strokePaint);
-
-      //    invalidate();
+            invalidate();
         //canvas.drawCircle(pX, pY, sizeHalf, strokePaint);
     }
 

@@ -4,5 +4,8 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
 
-    <color name="strokeColor">#212121</color>
+    <color name="strokeColor">#32353e</color>
+    <color name="bodyColor">#EDA85D</color>
+    <color name="bodyLightColor">#F2C38B</color>
+    <color name="bodyDarkColor">#C5843D</color>
 </resources>
