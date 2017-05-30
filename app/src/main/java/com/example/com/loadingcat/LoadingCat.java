@@ -259,7 +259,7 @@ public class LoadingCat extends View {
 
         //  canvas.drawPath(path, strokePaint);
 
-            invalidate();
+        //    invalidate();
         //canvas.drawCircle(pX, pY, sizeHalf, strokePaint);
     }
 
