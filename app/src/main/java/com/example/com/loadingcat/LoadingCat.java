@@ -16,8 +16,8 @@ public class LoadingCat extends View {
 
     private final static int HEAD_LENGTH = 60;
     private final static int STROKE_WIDTH = 24;
-    private final static int PAW_WIDTH = 64;
-    private final static int PAW_LIGHT_WIDTH = 92;
+//    private final static int PAW_WIDTH = 64;
+    // private final static int PAW_LIGHT_WIDTH = 92;
 
     Rect drawingRect;
     RectF drawingRectF;
@@ -35,6 +35,7 @@ public class LoadingCat extends View {
     Paint pawStroke;
     Paint pawLightStroke;
     Paint tailStroke;
+    Paint mouthStroke;
 
     Matrix rotateMatrix;
 
@@ -45,6 +46,8 @@ public class LoadingCat extends View {
     int strokeColor;
     int bodyLightColor;
     int bodyDarkColor;
+    Path path;
+    Point point;
 
     public LoadingCat(Context context) {
         super(context);
@@ -82,45 +85,51 @@ public class LoadingCat extends View {
         strokePaint.setStrokeCap(Paint.Cap.ROUND);
         strokePaint.setStrokeJoin(Paint.Join.ROUND);
 
+        mouthStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mouthStroke.setColor(strokeColor);
+        mouthStroke.setStyle(Paint.Style.STROKE);
+        mouthStroke.setStrokeWidth(STROKE_WIDTH  / 3);
+        mouthStroke.setStrokeCap(Paint.Cap.ROUND);
+        mouthStroke.setStrokeJoin(Paint.Join.ROUND);
+
         fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         fillPaint.setColor(bodyColor);
 
         pawStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
         pawStroke.setColor(strokeColor);
         pawStroke.setStyle(Paint.Style.STROKE);
-        pawStroke.setStrokeWidth(PAW_WIDTH);
         pawStroke.setStrokeCap(Paint.Cap.ROUND);
         pawStroke.setStrokeJoin(Paint.Join.ROUND);
 
         pawFill = new Paint(Paint.ANTI_ALIAS_FLAG);
         pawFill.setColor(bodyColor);
         pawFill.setStyle(Paint.Style.STROKE);
-        pawFill.setStrokeWidth(PAW_WIDTH - STROKE_WIDTH);
+
         pawFill.setStrokeCap(Paint.Cap.ROUND);
         pawFill.setStrokeJoin(Paint.Join.ROUND);
 
         pawLightStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
         pawLightStroke.setColor(bodyLightColor);
         pawLightStroke.setStyle(Paint.Style.STROKE);
-        pawLightStroke.setStrokeWidth(PAW_LIGHT_WIDTH);
+
         pawLightStroke.setStrokeCap(Paint.Cap.ROUND);
         pawLightStroke.setStrokeJoin(Paint.Join.ROUND);
 
         bodyPatint = new Paint(Paint.ANTI_ALIAS_FLAG);
         bodyPatint.setColor(bodyColor);
         bodyPatint.setStyle(Paint.Style.STROKE);
-        bodyPatint.setStrokeWidth(PAW_LIGHT_WIDTH + 30);
         bodyPatint.setStrokeCap(Paint.Cap.BUTT);
 
         tailStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
         tailStroke.setColor(bodyDarkColor);
         tailStroke.setStyle(Paint.Style.STROKE);
-        tailStroke.setStrokeWidth(PAW_WIDTH - STROKE_WIDTH);
         tailStroke.setStrokeCap(Paint.Cap.ROUND);
         tailStroke.setStrokeJoin(Paint.Join.ROUND);
 
 
         rotateMatrix = new Matrix();
+        path = new Path();
+        point = new Point();
         setLayerType(LAYER_TYPE_HARDWARE, null);
     }
 
@@ -128,7 +137,7 @@ public class LoadingCat extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int sizeHalf = Math.min(getMeasuredHeight(), getMeasuredWidth()) >> 1;
-        int sizeQuad = (int) (sizeHalf * 0.4f);
+        int sizeQuad = (int) (sizeHalf * 0.42f);
         int sizeQuadHalf = sizeQuad >> 1;
         int cX = getMeasuredWidth() >> 1;
         int cY = getMeasuredHeight() >> 1;
@@ -172,6 +181,13 @@ public class LoadingCat extends View {
                 drawingRect.right - sizeQuadHalf,
                 drawingRect.bottom - sizeQuadHalf
         );
+
+
+        pawStroke.setStrokeWidth(earSize);
+        pawFill.setStrokeWidth(earSize - STROKE_WIDTH);
+        tailStroke.setStrokeWidth(earSize - STROKE_WIDTH);
+        pawLightStroke.setStrokeWidth(sizeQuadHalf);
+        bodyPatint.setStrokeWidth(sizeQuadHalf + STROKE_WIDTH * 2.2f);
     }
 
     int i = 0;
@@ -200,7 +216,7 @@ public class LoadingCat extends View {
 
         if (inc) {
             alph += 1;
-            if (alph > 200)
+            if (alph > 170)
                 inc = false;
         } else {
             alph -= 1;
@@ -208,14 +224,14 @@ public class LoadingCat extends View {
                 inc = true;
         }
 
-        canvas.rotate(i -= 4, pX, pY);
+        canvas.rotate(i -= 2, pX, pY);
         canvas.save();
 
         rotateMatrix.setTranslate(0, 40);
-        Point point = new Point(pX + sizeHalf - earSize, pY);
+        point.set(pX + sizeHalf - earSize, pY);
 
         //head
-        Path path = new Path();
+
         path.arcTo(drawingRectF, HEAD_LENGTH, -HEAD_LENGTH);
         transformPoint(point, rotateMatrix);
         path.lineTo(point.x, point.y);
@@ -251,15 +267,29 @@ public class LoadingCat extends View {
         canvas.restore();
 
         //TODO hardcode
-        canvas.translate(0, 60);
-        canvas.rotate(3,pX,pY);
-        canvas.drawPoint(pX + sizeHalf - earSize - strokePaint.getStrokeWidth() / 4, pY, strokePaint);
-        canvas.drawPoint(pX + internalSizeHalf + earSize + strokePaint.getStrokeWidth() / 4, pY, strokePaint);
+        canvas.translate(0, 70);
+        canvas.rotate(3, pX, pY);
 
+        float rightEyeX = pX + sizeHalf - earSize - strokePaint.getStrokeWidth() / 4;
+        float leftEyeX = pX + internalSizeHalf + earSize + strokePaint.getStrokeWidth() / 4;
+        float distanceEyeX = (rightEyeX - leftEyeX);
+        float distanceEyeQuadX = (rightEyeX - leftEyeX) / 4;
+        float centerEyeX = leftEyeX + distanceEyeX / 2;
 
-        //  canvas.drawPath(path, strokePaint);
+        canvas.drawPoint(leftEyeX, pY, strokePaint);
+        canvas.drawPoint(rightEyeX, pY, strokePaint);
 
-        //    invalidate();
+        canvas.translate(0, 30);
+
+        path.reset();
+        path.moveTo(leftEyeX + distanceEyeQuadX, pY);
+        path.quadTo(centerEyeX - distanceEyeQuadX / 2, pY + distanceEyeQuadX * 0.7f, centerEyeX, pY);
+        path.quadTo(centerEyeX + distanceEyeQuadX / 2, pY + distanceEyeQuadX * 0.7f, rightEyeX - distanceEyeQuadX, pY);
+
+        canvas.drawPath(path, mouthStroke);
+        // canvas.drawPath(path,strokePaint);
+
+        // invalidate();
         //canvas.drawCircle(pX, pY, sizeHalf, strokePaint);
     }
 
