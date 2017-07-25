@@ -11,11 +11,17 @@ import android.graphics.RectF;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.Interpolator;
 
 public class LoadingCat extends View {
 
     private final static int HEAD_LENGTH = 60;
-    private final static int STROKE_WIDTH = 24;
+    private final static int BODY_SMALLEST_LENGTH = 30;
+
+    private final static float SPEED = 4;
+    private final static float SPEED_HALF = SPEED / 2;
+    private final static Interpolator interpolator = new AccelerateDecelerateInterpolator();
 //    private final static int PAW_WIDTH = 64;
     // private final static int PAW_LIGHT_WIDTH = 92;
 
@@ -39,8 +45,9 @@ public class LoadingCat extends View {
 
     Matrix rotateMatrix;
 
-    float alph = 100;
-    boolean inc;
+    float bodyLength = 30;
+    float alph = 30;
+    float pointer = 0;
 
     int bodyColor;
     int strokeColor;
@@ -81,14 +88,12 @@ public class LoadingCat extends View {
         strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         strokePaint.setColor(strokeColor);
         strokePaint.setStyle(Paint.Style.STROKE);
-        strokePaint.setStrokeWidth(STROKE_WIDTH);
         strokePaint.setStrokeCap(Paint.Cap.ROUND);
         strokePaint.setStrokeJoin(Paint.Join.ROUND);
 
         mouthStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
         mouthStroke.setColor(strokeColor);
         mouthStroke.setStyle(Paint.Style.STROKE);
-        mouthStroke.setStrokeWidth(STROKE_WIDTH  / 3);
         mouthStroke.setStrokeCap(Paint.Cap.ROUND);
         mouthStroke.setStrokeJoin(Paint.Join.ROUND);
 
@@ -141,8 +146,9 @@ public class LoadingCat extends View {
         int sizeQuadHalf = sizeQuad >> 1;
         int cX = getMeasuredWidth() >> 1;
         int cY = getMeasuredHeight() >> 1;
-        int padding = (int) (strokePaint.getStrokeWidth() * 0.5f);
+        int padding = (int) (strokePaint.getStrokeWidth() * 0.5f + sizeQuad * 0.1f);
         float strokeHalf = pawStroke.getStrokeWidth() / 2 - strokePaint.getStrokeWidth() / 2;
+        float strokeWidth = getMeasuredWidth() * 0.024f;
 
         drawingRect.set(
                 cX - sizeHalf + padding,
@@ -184,13 +190,13 @@ public class LoadingCat extends View {
 
 
         pawStroke.setStrokeWidth(earSize);
-        pawFill.setStrokeWidth(earSize - STROKE_WIDTH);
-        tailStroke.setStrokeWidth(earSize - STROKE_WIDTH);
+        pawFill.setStrokeWidth(earSize - strokeWidth);
+        tailStroke.setStrokeWidth(earSize - strokeWidth);
         pawLightStroke.setStrokeWidth(sizeQuadHalf);
-        bodyPatint.setStrokeWidth(sizeQuadHalf + STROKE_WIDTH * 2.2f);
+        bodyPatint.setStrokeWidth(sizeQuadHalf + strokeWidth * 2.2f);
+        strokePaint.setStrokeWidth(strokeWidth);
+        mouthStroke.setStrokeWidth(strokeWidth / 3);
     }
-
-    int i = 0;
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -214,18 +220,15 @@ public class LoadingCat extends View {
         float rightA = (float) Math.toDegrees(rightAr);
 
 
-        if (inc) {
-            alph += 1;
-            if (alph > 170)
-                inc = false;
-        } else {
-            alph -= 1;
-            if (alph < 60)
-                inc = true;
-        }
 
-        canvas.rotate(i -= 2, pX, pY);
+
+        bodyLength = interpolator.getInterpolation(pointer < 360 ? pointer / 360f :  (720f - pointer) / 360f) * 180 + BODY_SMALLEST_LENGTH;
+        alph = interpolator.getInterpolation(pointer / 720f) * -720 + 50;
+
+        pointer += SPEED;
+        canvas.rotate(alph, pX, pY);
         canvas.save();
+        if(pointer > 720) pointer -= 720;
 
         rotateMatrix.setTranslate(0, 40);
         point.set(pX + sizeHalf - earSize, pY);
@@ -244,18 +247,27 @@ public class LoadingCat extends View {
         canvas.drawPath(path, fillPaint);
 
         //tail
-        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH + alph - 30, 40, false, pawStroke);
-        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH + alph - 30, 40, false, tailStroke);
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH + bodyLength - 30, 40, false, pawStroke);
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH + bodyLength - 30, 40, false, tailStroke);
         //back paws
-        canvas.drawArc(internalLeftRectF, HEAD_LENGTH, alph, false, pawStroke);
-        canvas.drawArc(internalRightRectF, HEAD_LENGTH, alph, false, pawStroke);
+        canvas.drawArc(internalLeftRectF, HEAD_LENGTH, bodyLength, false, pawStroke);
+        canvas.drawArc(internalRightRectF, HEAD_LENGTH, bodyLength, false, pawStroke);
 
-        canvas.drawArc(internalLeftRectF, HEAD_LENGTH - 10, alph + 10, false, pawFill);
-        canvas.drawArc(internalRightRectF, HEAD_LENGTH - 10, alph + 10, false, pawFill);
+        canvas.drawArc(internalLeftRectF, HEAD_LENGTH - 10, bodyLength + 10, false, pawFill);
+        canvas.drawArc(internalRightRectF, HEAD_LENGTH - 10, bodyLength + 10, false, pawFill);
 
         //body
-        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH - 20, alph + 10, false, bodyPatint);
-        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH - 20, alph - 15, false, pawLightStroke);
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH - 20, bodyLength + 10, false, bodyPatint);
+        canvas.drawArc(internalMiddleRecrF, HEAD_LENGTH - 20, bodyLength - 15, false, pawLightStroke);
+
+        canvas.save();
+        canvas.rotate(bodyLength + HEAD_LENGTH - 10, pX, pY);
+        float pawPadding = pawFill.getStrokeWidth() + (pawStroke.getStrokeWidth() - pawFill.getStrokeWidth()) * 0.3f;
+        strokePaint.setStrokeWidth(strokePaint.getStrokeWidth() / 2);
+        canvas.drawLine(pX + internalSizeHalf + pawPadding, pY,
+                pX + sizeHalf - pawPadding, pY, strokePaint);
+        strokePaint.setStrokeWidth(strokePaint.getStrokeWidth() * 2);
+        canvas.restore();
 
         //face paws
         canvas.drawArc(internalLeftRectF, HEAD_LENGTH - 17, 15, false, pawStroke);
@@ -266,30 +278,56 @@ public class LoadingCat extends View {
 
         canvas.restore();
 
-        //TODO hardcode
+        //TODO remove hardcode
+        canvas.save();
         canvas.translate(0, 70);
         canvas.rotate(3, pX, pY);
 
         float rightEyeX = pX + sizeHalf - earSize - strokePaint.getStrokeWidth() / 4;
-        float leftEyeX = pX + internalSizeHalf + earSize + strokePaint.getStrokeWidth() / 4;
+        float leftEyeX = pX + internalSizeHalf + earSize - strokePaint.getStrokeWidth() / 4;
         float distanceEyeX = (rightEyeX - leftEyeX);
         float distanceEyeQuadX = (rightEyeX - leftEyeX) / 4;
         float centerEyeX = leftEyeX + distanceEyeX / 2;
+        int earSizeHalf = earSize >> 1;
 
         canvas.drawPoint(leftEyeX, pY, strokePaint);
         canvas.drawPoint(rightEyeX, pY, strokePaint);
 
-        canvas.translate(0, 30);
-
+        canvas.translate(0, 40);
+        //mouth
         path.reset();
         path.moveTo(leftEyeX + distanceEyeQuadX, pY);
         path.quadTo(centerEyeX - distanceEyeQuadX / 2, pY + distanceEyeQuadX * 0.7f, centerEyeX, pY);
         path.quadTo(centerEyeX + distanceEyeQuadX / 2, pY + distanceEyeQuadX * 0.7f, rightEyeX - distanceEyeQuadX, pY);
 
         canvas.drawPath(path, mouthStroke);
+        path.reset();
+        canvas.restore();
+
+        canvas.rotate(20, pX, pY);
+        canvas.rotate(10, centerEyeX, pY);
+        canvas.save();
+
+        rightEyeX = pX + sizeHalf - earSize;
+        leftEyeX = pX + internalSizeHalf + earSize;
+        distanceEyeX = (rightEyeX - leftEyeX);
+        centerEyeX = leftEyeX + distanceEyeX / 2;
+
+        for (int i = 0; i < 3; i++) {
+            canvas.restore();
+            canvas.save();
+            canvas.rotate(-10 * i, centerEyeX, pY);
+            canvas.drawLine(pX + internalSizeHalf - earSizeHalf, pY, pX + internalSizeHalf + earSizeHalf / 2, pY, mouthStroke);
+            canvas.restore();
+            canvas.save();
+            canvas.rotate(10 * i - 30, centerEyeX, pY);
+            canvas.drawLine(pX + sizeHalf - earSizeHalf / 2, pY, pX + sizeHalf + earSizeHalf, pY, mouthStroke);
+        }
+
+        canvas.restore();
         // canvas.drawPath(path,strokePaint);
 
-        // invalidate();
+           invalidate();
         //canvas.drawCircle(pX, pY, sizeHalf, strokePaint);
     }
 
