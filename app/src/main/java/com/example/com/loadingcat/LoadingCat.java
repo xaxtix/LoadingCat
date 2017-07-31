@@ -55,6 +55,10 @@ public class LoadingCat extends View {
     int bodyDarkColor;
     Path path;
     Point point;
+    int foreheadMargin;
+    int eyeMarging;
+    int mouthMargin;
+
 
     public LoadingCat(Context context) {
         super(context);
@@ -148,7 +152,7 @@ public class LoadingCat extends View {
         int cY = getMeasuredHeight() >> 1;
         int padding = (int) (strokePaint.getStrokeWidth() * 0.5f + sizeQuad * 0.1f);
         float strokeHalf = pawStroke.getStrokeWidth() / 2 - strokePaint.getStrokeWidth() / 2;
-        float strokeWidth = getMeasuredWidth() * 0.024f;
+        float strokeWidth = Math.min(getMeasuredHeight(), getMeasuredWidth()) * 0.024f;
 
         drawingRect.set(
                 cX - sizeHalf + padding,
@@ -165,7 +169,7 @@ public class LoadingCat extends View {
                 drawingRect.bottom - sizeQuad
         );
 
-        int earSize = ((int) (drawingRectF.bottom - internalRectF.bottom)) / 4;
+        int earSize = ((int) (drawingRect.right - internalRectF.right)) / 4;
 
         internalLeftRectF.set(
                 internalRectF.left - strokeHalf,
@@ -193,9 +197,13 @@ public class LoadingCat extends View {
         pawFill.setStrokeWidth(earSize - strokeWidth);
         tailStroke.setStrokeWidth(earSize - strokeWidth);
         pawLightStroke.setStrokeWidth(sizeQuadHalf);
-        bodyPatint.setStrokeWidth(sizeQuadHalf + strokeWidth * 2.2f);
+        bodyPatint.setStrokeWidth(drawingRect.right - internalRectF.right - strokeWidth / 2);
         strokePaint.setStrokeWidth(strokeWidth);
         mouthStroke.setStrokeWidth(strokeWidth / 3);
+
+        foreheadMargin = (int) (sizeHalf * Math.tan(Math.toRadians(5)));
+        eyeMarging = (int) (sizeHalf * Math.tan(Math.toRadians(9)));
+        mouthMargin = foreheadMargin << 1;
     }
 
     @Override
@@ -230,7 +238,7 @@ public class LoadingCat extends View {
         canvas.save();
         if(pointer > 720) pointer -= 720;
 
-        rotateMatrix.setTranslate(0, 40);
+        rotateMatrix.setTranslate(0, foreheadMargin);
         point.set(pX + sizeHalf - earSize, pY);
 
         //head
@@ -277,10 +285,9 @@ public class LoadingCat extends View {
         canvas.drawArc(internalRightRectF, HEAD_LENGTH - 17 - 10, 15 + 10, false, pawFill);
 
         canvas.restore();
-
-        //TODO remove hardcode
+        
         canvas.save();
-        canvas.translate(0, 70);
+        canvas.translate(0, eyeMarging);
         canvas.rotate(3, pX, pY);
 
         float rightEyeX = pX + sizeHalf - earSize - strokePaint.getStrokeWidth() / 4;
@@ -293,7 +300,7 @@ public class LoadingCat extends View {
         canvas.drawPoint(leftEyeX, pY, strokePaint);
         canvas.drawPoint(rightEyeX, pY, strokePaint);
 
-        canvas.translate(0, 40);
+        canvas.translate(0, foreheadMargin);
         //mouth
         path.reset();
         path.moveTo(leftEyeX + distanceEyeQuadX, pY);
