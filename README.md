@@ -4,7 +4,7 @@ https://dribbble.com/shots/3197970-Loading-cat
 
 Sample of canvas painting
 
-![](preview/LoadingCatPreview.gif)
+![](preview/LoadingCatPreview.gif = 250x)
 
 Do not try this!
 If you want implemeth something like this use Lottie:
